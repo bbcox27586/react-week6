@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import "./assets/style.css";
 
@@ -7,7 +7,7 @@ const API_BASE = "https://ec-course-api.hexschool.io/v2";
 // 請自行替換 API_PATH
 const API_PATH = "react-test";
 
- const LoginInput = ({handleSubmit , formData , handleInputChange}) => {
+ const LoginInput = ({handleSubmit , LoginData , handleInputChange}) => {
   return(<div className="container login">
     <div className="row justify-content-center">
       <h1 className="h3 mb-3 font-weight-normal">請先登入</h1>
@@ -19,7 +19,7 @@ const API_PATH = "react-test";
               className="form-control"
               id="username"
               placeholder="name@example.com"
-              value={formData.username}
+              value={LoginData.username}
               onChange={handleInputChange}
               required
               autoFocus
@@ -32,7 +32,7 @@ const API_PATH = "react-test";
               className="form-control"
               id="password"
               placeholder="Password"
-              value={formData.password}
+              value={LoginData.password}
               onChange={handleInputChange}
               required
             />
@@ -151,16 +151,24 @@ const API_PATH = "react-test";
 }
 
 function App() {
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
+  const [LoginData, setLoginData ] =  useState({
+    username : "",
+    password : ""
   });
+  const [isAuth, setIsAuth ] =  useState(false);
+  const [products , setProducts] = useState([]);
+  const [tempProduct , setTempProduct] = useState(null);
+    
+  const handleInputChange = (e) => {
+    const { id, value } = e.target
+    setLoginData((preData)=>(
+      {...preData , [id]:value}
+    ))
+  }
 
-  const [isAuth, setisAuth] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [tempProduct, setTempProduct] = useState(null);
 
-  async function checkLogin() {
+
+  async function checkLogin (e){
     try {
       const token = document.cookie
         .split("; ")
@@ -176,51 +184,40 @@ function App() {
     }
   }
 
-  const getData = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE}/api/${API_PATH}/admin/products`
-      );
-      setProducts(response.data.products);
-      console.log(response)
-    } catch (err) {
-      console.error(err.response.data.message);
+  const getData = async () =>{
+    try{
+      const response = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products`)
+      //console.log(response.data.products);
+      setProducts(response.data.products)
+      
+    }catch (error){
+      console.log(error);
     }
-  };
-
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [id]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  }
+  const handleSubmit = async (e) =>{
     e.preventDefault();
-
     try {
-      const response = await axios.post(`${API_BASE}/admin/signin`, formData);
+      const response = await axios.post(`${API_BASE}/admin/signin`,LoginData)
       const { token, expired } = response.data;
       document.cookie = `hexToken=${token};expires=${new Date(expired)};`;
-
       axios.defaults.headers.common.Authorization = `${token}`;
-
+    
       getData();
+      
+      setIsAuth(true)
 
-      setisAuth(true);
     } catch (error) {
-      console.log(error)
-      alert("登入失敗: " + error.response.data.message);
+      console.log(error);
+      alert('登入失敗, 請重新登入')
     }
-  };
+  }
 
   return (
     <>
       {isAuth ? (
         <ProductList checkLogin={checkLogin} tempProduct={tempProduct} products={products} setTempProduct={setTempProduct} />
       ) : (
-        <LoginInput handleSubmit={handleSubmit} formData={formData} handleInputChange={handleInputChange}/>
+        <LoginInput handleSubmit={handleSubmit} LoginData={LoginData} handleInputChange={handleInputChange}/>
       )}
     </>
   );
