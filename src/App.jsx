@@ -7,7 +7,7 @@ const API_BASE = "https://ec-course-api.hexschool.io/v2";
 // 請自行替換 API_PATH
 const API_PATH = "react-test";
 
- const LoginInput = ({handleSubmit , LoginData , handleInputChange}) => {
+ const LoginInput = ({handleSubmit , loginData , handleInputChange}) => {
   return(<div className="container login">
     <div className="row justify-content-center">
       <h1 className="h3 mb-3 font-weight-normal">請先登入</h1>
@@ -19,7 +19,7 @@ const API_PATH = "react-test";
               className="form-control"
               id="username"
               placeholder="name@example.com"
-              value={LoginData.username}
+              value={loginData.username}
               onChange={handleInputChange}
               required
               autoFocus
@@ -32,7 +32,7 @@ const API_PATH = "react-test";
               className="form-control"
               id="password"
               placeholder="Password"
-              value={LoginData.password}
+              value={loginData.password}
               onChange={handleInputChange}
               required
             />
@@ -151,7 +151,7 @@ const API_PATH = "react-test";
 }
 
 function App() {
-  const [LoginData, setLoginData ] =  useState({
+  const [loginData, setloginData ] =  useState({
     username : "",
     password : ""
   });
@@ -161,7 +161,7 @@ function App() {
     
   const handleInputChange = (e) => {
     const { id, value } = e.target
-    setLoginData((preData)=>(
+    setloginData((preData)=>(
       {...preData , [id]:value}
     ))
   }
@@ -197,7 +197,7 @@ function App() {
   const handleSubmit = async (e) =>{
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_BASE}/admin/signin`,LoginData)
+      const response = await axios.post(`${API_BASE}/admin/signin`,loginData)
       const { token, expired } = response.data;
       document.cookie = `hexToken=${token};expires=${new Date(expired)};`;
       axios.defaults.headers.common.Authorization = `${token}`;
@@ -217,7 +217,7 @@ function App() {
       {isAuth ? (
         <ProductList checkLogin={checkLogin} tempProduct={tempProduct} products={products} setTempProduct={setTempProduct} />
       ) : (
-        <LoginInput handleSubmit={handleSubmit} LoginData={LoginData} handleInputChange={handleInputChange}/>
+        <LoginInput handleSubmit={handleSubmit} LoginData={loginData} handleInputChange={handleInputChange}/>
       )}
     </>
   );
