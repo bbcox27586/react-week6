@@ -19,7 +19,7 @@ function App() {
     description: "",
     content: "",
     is_enabled: false,
-    imagesUrl: [],
+    imagesUrl: [""],
   }
   const [formData, setFormData] = useState({
     username: "g199703075@gmail.com",
@@ -29,7 +29,9 @@ function App() {
   const [products, setProducts] = useState([])
   const [templateData, setTemplateData] = useState(defaultValue)
   const modalRef = useRef(null)
+  const delmodalRef = useRef(null)
   const productModalRef = useRef(null);
+  const delProductModalRef = useRef(null);
   const [modalType,setModalType] = useState("");
 
   useEffect(() => {
@@ -41,8 +43,10 @@ function App() {
     modalRef.current = new bootstrap.Modal(productModalRef.current, {
       keyboard: false,
     });
+    delmodalRef.current = new bootstrap.Modal(delProductModalRef.current, {
+      keyboard: false,
+    });
     checkAdmin();
-    
   }, []);
 
   const openModal = (type , products) => {
@@ -55,7 +59,7 @@ function App() {
       setTemplateData(defaultValue)
       break;
     }
-    
+    console.log(templateData.imagesUrl?.length)
     modalRef.current.show();
   };
 
@@ -67,6 +71,17 @@ function App() {
   const closeModal = () => {
     modalRef.current.hide();
     console.log(templateData)
+    setModalType("")
+  };
+
+  const opendelModal = (products) => {
+    setTemplateData(products)
+    delmodalRef.current.show();
+  };
+
+  const closedelModal = () => {
+    delmodalRef.current.hide();
+    console.log("a")
     setModalType("")
   };
 
@@ -87,10 +102,11 @@ function App() {
   };
 
   const handleAddImage = () =>{
-      setTemplateData((prevData) => ({
-        ...prevData,
-        imageUrl : [...prevData.imagesUrl, ""]
-      }));
+    const newInages = [...templateData.imagesUrl ,'']
+      setTemplateData({
+        ...templateData,
+        imagesUrl : newInages
+      });
       
   }
     
@@ -125,8 +141,78 @@ function App() {
   }
 
   const handleRemoveImage = () =>{
-
+    const newInages = [...templateData.imagesUrl]
+    newInages.pop();
+    setTemplateData({...templateData , imagesUrl:newInages})
   }
+
+  const createProduct = async() =>{
+    try{
+      const response = await axios.post(`${API_BASE}/api/${API_PATH}/admin/product`,{
+        data: {
+          ...templateData,
+          origin_price:Number(templateData.origin_price),
+          price:Number(templateData.price),
+          is_enabled:templateData.is_enabled?1:0
+        }
+      })
+      alert('新增產品成功')
+    }catch(error){
+      alert('新增產品失敗')
+    }
+  }
+
+  const delData = async(e) => {
+    const id = e.target.id
+    try{
+      const response = await axios.delete(`${API_BASE}/api/${API_PATH}/admin/product/${id}`)
+      alert("刪除產品成功")
+      console.log(response)
+      getData()
+      closedelModal()
+    }catch(error){
+      alert("刪除產品失敗")
+    }
+    
+  };
+
+  const handleEditData = async() => {
+    try{
+      const response = await axios.put(`${API_BASE}/api/${API_PATH}/admin/product/${templateData.id}`,{
+        data: {
+          ...templateData,
+          origin_price:Number(templateData.origin_price),
+          price:Number(templateData.price),
+          is_enabled:templateData.is_enabled?1:0
+        }
+      })
+      alert('編輯產品成功')
+    }catch(error){
+      alert('編輯產品失敗')
+    }
+  }
+
+  const handleUpdataProduct = async() =>{
+
+    try{
+      if(modalType === 'edit'){
+        await handleEditData();
+        getData()
+        closeModal()
+      }else{
+        await createProduct();
+        getData()
+        closeModal()
+      }
+      
+    }catch(error){
+      alert('新增產品失敗')
+      
+    }
+  }
+
+
+  
   
   return (
     <>
@@ -152,19 +238,21 @@ function App() {
                   products.map((item)=>{
                     return(<tr key={item.id}> 
                       <td>{item.category}</td>
-                      <td>{item.content}</td>
+                      <td>{item.title}</td>
                       <td className="text-end">{item.origin_price}</td>
                       <td className="text-end">{item.price}</td>
                       <td>
-                        <span className="text-success">啟用</span>
-                        <span>未啟用</span>
+                        {console.log(item)
+                        }
+                        {item.is_enabled===1 ? (<span className="text-success">啟用</span>)
+                          :(<span>未啟用</span>) }
                       </td>
                       <td>
                         <div className="btn-group">
                           <button type="button" className="btn btn-outline-primary btn-sm" onClick={()=>openModal('edit',item)}>
                             編輯
                           </button>
-                          <button type="button" className="btn btn-outline-danger btn-sm">
+                          <button type="button" className="btn btn-outline-danger btn-sm" onClick={()=>opendelModal(item)}>
                             刪除
                           </button>
                         </div>
@@ -221,6 +309,45 @@ function App() {
           <p className="mt-5 mb-3 text-muted">&copy; 2024~∞ - 六角學院</p>
         </div>
       )}
+      {/*刪除產品modal*/ }
+      <div
+        className="modal fade"
+        id="delProductModal"
+        tabIndex="-1"
+        ref={delProductModalRef}
+        style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      >
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h1 className="modal-title fs-5">刪除產品</h1>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body">
+              你是否要刪除 
+              <span className="text-danger fw-bold">{templateData.title}</span>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={()=>closedelModal()}
+              >
+                取消
+              </button>
+              <button type="button" className="btn btn-danger" id={templateData.id} onClick={(e)=>delData(e)}>
+                刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div
         className="modal fade"
         tabIndex="-1"
@@ -275,6 +402,7 @@ function App() {
                             id={`imagesUrl-${index + 1}`}
                             type="text"
                             placeholder={`圖片網址 ${index + 1}`}
+                            value={templateData.imagesUrl[index]}
                             className="form-control mb-2"
                             onChange={(e)=>handleImgaeChange(e , index)}
                           />
@@ -289,26 +417,22 @@ function App() {
                       ))}
 
                       <div className="btn-group w-100">
-                        {templateData.imagesUrl.length < 5 &&
-                          templateData.imagesUrl[
-                            templateData.imagesUrl.length - 1
-                          ] !== "" && (
-                            <button
+                        {templateData.imagesUrl?.length < 5 && templateData.imagesUrl[templateData.imagesUrl?.length-1] !==''&& (<button
                               className="btn btn-outline-primary btn-sm w-100"
                               onClick={handleAddImage}
                             >
                               新增圖片
-                            </button>
-                          )}
+                            </button>)}
+                            
+                        
 
-                        {templateData.imagesUrl.length >= 1 && (
-                          <button
-                            className="btn btn-outline-danger btn-sm w-100"
-                            onClick={handleRemoveImage}
-                          >
-                            取消圖片
-                          </button>
-                        )}
+                        {templateData.imagesUrl?.length > 1 && (<button
+                          className="btn btn-outline-danger btn-sm w-100"
+                          onClick={handleRemoveImage}
+                        >
+                          取消圖片
+                        </button>)}
+                          
                       </div>
                       
 
@@ -428,8 +552,8 @@ function App() {
                 >
                 取消
               </button>
-              <button type="button" className="btn btn-primary"
-              onClick={() => closeModal()}
+              <button type="button" className="btn btn-primary" id={templateData.id}
+              onClick={handleUpdataProduct}
               >確認</button>
             </div>
           </div>
