@@ -22,8 +22,8 @@ function App() {
     imagesUrl: [""],
   }
   const [formData, setFormData] = useState({
-    username: "g199703075@gmail.com",
-    password: "tp654jobbcox",
+    username: "",
+    password: "",
   });
   const [isAuth, setisAuth] = useState(false);
   const [products, setProducts] = useState([])
