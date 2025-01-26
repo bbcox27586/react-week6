@@ -4,7 +4,8 @@ import axios from "axios";
 const API_BASE = "https://ec-course-api.hexschool.io/v2";
 const API_PATH = "react-test"; 
 
-function DelProduct ({delProductModalRef , closedelModal , getData , templateData}){
+function DelProduct ({delProductModalRef,  getData , templateData, delmodalRef, setModalType}){
+  
     const delData = async(e) => {
         const id = e.target.id
         try{
@@ -19,6 +20,12 @@ function DelProduct ({delProductModalRef , closedelModal , getData , templateDat
           
         }
         
+      };
+
+      const closedelModal = () => {
+        delmodalRef.current.hide();
+        console.log("a")
+        setModalType("")
       };
 
     return(<div

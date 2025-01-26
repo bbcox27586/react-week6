@@ -4,8 +4,8 @@ import axios from "axios";
 const API_BASE = "https://ec-course-api.hexschool.io/v2";
 const API_PATH = "react-test"; 
 
-function EditProduct ({getData,closeModal, setTemplateData, productModalRef, modalType, templateData}) {
-    
+
+function EditProduct ({getData, closeModal, setTemplateData, productModalRef, modalType, templateData}) {
 
     const handleModalInputChange = (e) =>{
         const {value , id , type , checked } = e.target

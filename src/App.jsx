@@ -29,14 +29,15 @@ function App( ) {
 
   
   const [isAuth, setisAuth] = useState(false);
+  const [pageinFo , setPageInfo ] = useState({})
   const [products, setProducts] = useState([])
   const [templateData, setTemplateData] = useState(defaultValue)
   const modalRef = useRef(null)
   const delmodalRef = useRef(null)
   const productModalRef = useRef(null);
-  const delProductModalRef = useRef(null);
+ 
   const [modalType,setModalType] = useState("");
-
+  const delProductModalRef = useRef(null);
   useEffect(() => {
     const token = document.cookie.replace(
       /(?:(?:^|.*;\s*)hexToken\s*=\s*([^;]*).*$)|^.*$/,
@@ -75,8 +76,6 @@ function App( ) {
     modalRef.current.show();
   };
 
-  
-
   const closeModal = () => {
     modalRef.current.hide();
     console.log(templateData)
@@ -86,12 +85,6 @@ function App( ) {
   const opendelModal = (products) => {
     setTemplateData(products)
     delmodalRef.current.show();
-  };
-
-  const closedelModal = () => {
-    delmodalRef.current.hide();
-    console.log("a")
-    setModalType("")
   };
     
   const getData = async(page=1) =>{
@@ -104,23 +97,18 @@ function App( ) {
       console.log(error)
     }
   }
-
-  const [pageinFo , setPageInfo ] = useState({})
-
-  
-  
   
   return (
     <>
       {isAuth ? (
-        <ProductList openModal={openModal} opendelModal={opendelModal} products={products} pageinFo={pageinFo} getData={getData} />
+        <ProductList openModal={openModal} opendelModal={opendelModal}  getData={getData} pageinFo={pageinFo} products={products} />
       ) : (
         <LoginPage getData={getData} setisAuth={setisAuth} />
       )}
       {/*刪除產品modal*/ }
-      <DelProduct delProductModalRef={delProductModalRef} closedelModal={closedelModal} getData={getData} templateData={templateData}/>
+      <DelProduct delProductModalRef={delProductModalRef} getData={getData} templateData={templateData} delmodalRef={delmodalRef} setModalType={setModalType}/>
 
-      <EditProduct closeModal={closeModal} getData={getData} pageinFo={pageinFo}  setTemplateData={setTemplateData} templateData={templateData} productModalRef={productModalRef} modalType={modalType}/>
+      <EditProduct closeModal={closeModal} getData={getData}  setTemplateData={setTemplateData} templateData={templateData} productModalRef={productModalRef} modalType={modalType}/>
 
     </>
   );
