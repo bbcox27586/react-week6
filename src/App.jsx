@@ -30,10 +30,20 @@ function App() {
   }
 
   const [getProduct , setGetProduct] = useState([]);
+  const [getCardList , setGetCardList] = useState([]);
+  const [getModalNum , setGetModalNum] = useState(0);
+
+  const modalRef = useRef(null)
+  const myModal = useRef(null)
 
   useEffect(()=>{
     getProductList()
+    getCartList()
   },[])
+
+  useEffect(()=>{
+    myModal.current = new bootstrap.Modal(modalRef.current);
+  })
 
 
   const getProductList = async() => {
@@ -48,17 +58,16 @@ function App() {
 
   const getCartList = async() => {
     try{
-      const response = await axios.get(`${API_BASE}/api/${API_PATH}/products`)
-      setGetProduct(response.data.products)
+      const response = await axios.get(`${API_BASE}/api/${API_PATH}/cart`)
+      setGetCardList(response.data.carts)
     }catch(errors){
       console.log(errors);
       
     }
   }
-
-  console.log(getProduct);
   
-
+  console.log(getCardList);
+  
   const {
     register,
     watch,
@@ -78,10 +87,14 @@ function App() {
   console.log(watch());
   console.log(errors.email);
 
-  const moreDetail = () => {
-    console.log(1);
+  const moreDetail = (e) => {
+    setGetModalNum(e.target.value)
+    console.log(getProduct);
+    myModal.current.show()
     
   }
+  
+  console.log(typeof getModalNum);
   
 
   const onSubmit = (data) => {
@@ -107,20 +120,20 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {getProduct.map((item)=><tr key={item.id}>
+              {getProduct.map((item,index)=><tr key={index}>
                 <td style={{ width: '200px' }}>
-                  <div style={{ height: '100px', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                    <img src={item.imageUrl} alt="" style={{ height: '100px', backgroundSize: 'cover', backgroundPosition: 'center' }}/>
+                  <div style={{ height: '100px',  width: '200px', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                    <img src={item.imageUrl} alt="" style={{ height: '100px', width: '150px', objectFit:'cover' , backgroundSize: 'cover', backgroundPosition: 'center' }}/>
                   </div>
                 </td>
                 <td>{item.title}</td>
                 <td>
                   <del className="h6">原價{item.origin_price}</del>
-                  <div className="h5">特價{item.price}</div>
+                  <div className="h5" style={{ color:"red" }}>特價{item.price}</div>
                 </td>
                 <td>
                   <div className="btn-group btn-group-sm">
-                    <button type="button" className="btn btn-outline-secondary" onClick={moreDetail}>
+                    <button type="button" className="btn btn-outline-secondary" value={index}  onClick={(e)=>{moreDetail(e)}}>
                       <i className="fas fa-spinner fa-pulse"></i>
                       查看更多
                     </button>
@@ -161,6 +174,62 @@ function App() {
             </tfoot>
           </table>
         </div>
+
+        {/* 產品詳細資訊*/ }
+        <div className="modal fade"  ref={modalRef} tabindex="-1" >
+          <div className="modal-dialog modal-lg">
+            {getProduct.map((item, index)=>
+            index===Number(getModalNum) ? <div className="modal-content">
+            <div className="modal-header">
+              <h1 className="modal-title fs-5" id="exampleModalLabel" style={{ fontWeight: "900" }}>行程:{item.title}</h1>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div className="modal-body text-start">
+              <div className="card mb-3" style={{maxWidth:"1000px" }}>
+                <div className="row g-0">
+                  <div className="col-md-5">
+                    <img src={item.imageUrl}  style={{ height: "300px", objectFit: "cover" }} alt="..." />
+                  </div>
+                  <div className="col-md-7">
+                    <div className="card-body">
+                      <h3 className="card-text">行程介紹:</h3>
+                      {item.content}
+                    </div>
+                    <div style={{ marginTop: "50px" }}>
+                    <p className="card-text text-center">原價{item.origin_price}</p>
+                    <p className="card-text text-center" style={{ color : 'red'}}>特價{item.price}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+
+            <div className="modal-footer">
+              <div className="input-group align-items-center">
+                <label for="qtySelect">數量：</label>
+                <select id="qtySelect" class="form-select">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+              <button type="button" className="btn btn-primary">加入購物車</button>
+            </div>
+          </div> : ""   
+            )}
+          </div>
+        </div>
+
+
         <div className="my-5 row justify-content-center">
           <form className="col-md-6" id="form" onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-3">
