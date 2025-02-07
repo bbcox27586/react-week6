@@ -40,8 +40,10 @@ function App() {
       "qty": 0
     }
   });
+  const [updateCartItem , setUpdateCartItem] = useState(null)
   const [delCardList , setDelCardList] = useState("");
-  
+
+  const productNum = useRef(0)
   const modalRef = useRef(null)
   const myModal = useRef(null)
   //資料初始化
@@ -78,7 +80,6 @@ function App() {
         setShowImage([selectedItem.imageUrl, ...selectedItem.imagesUrl]);
       }
     }
-    console.log(3);
     
   }, [getModalNum, getProduct]);
   //react-hook-form
@@ -101,7 +102,6 @@ function App() {
   const moreDetail = (e) => {
     setGetModalNum(e.target.value)
     setShowMainImage("")
-    console.log(getProduct);
     myModal.current.show()
     
   }
@@ -126,7 +126,6 @@ function App() {
     (async()=>{
       try{
         const response = await axios.post(`${API_BASE}/api/${API_PATH}/cart`,addCardList)
-        console.log(response.data);
         setaddCardList({
           "data": {
             "product_id":"",
@@ -169,8 +168,6 @@ function App() {
     (async() => {
       try{
         const response = await axios.delete(`${API_BASE}/api/${API_PATH}/cart/${delCardList}`)
-        console.log(response.data);
-        
         getCartListFn()
         setDelCardList("")
       }catch(errors){
@@ -179,6 +176,44 @@ function App() {
       }
     })()
   },[delCardList])
+
+  const addProudctNum = (item) => {
+      setUpdateCartItem({
+        id: item.id,
+        data: {
+          product_id: item.product.id,
+          qty: item.qty + 1
+        }
+      });
+    }
+
+  const cutProductNum = (item) => {
+    if (item.qty > 1) { 
+      setUpdateCartItem({
+        id: item.id,
+        data: {
+          product_id: item.product.id,
+          qty: item.qty - 1
+        }
+      });
+    }
+  };
+      
+
+    useEffect(() => {
+      if (!updateCartItem) return; 
+      (async () => {
+        try {
+          const response = await axios.put(
+            `${API_BASE}/api/${API_PATH}/cart/${updateCartItem.id}`,
+            { data: updateCartItem.data }
+          );
+          getCartListFn();
+        } catch (errors) {
+          console.log(errors);
+        }
+      })();
+    }, [updateCartItem]);
 
   return (
     <div id="app">
@@ -223,7 +258,7 @@ function App() {
               
             </tbody>
           </table>
-          <div className="text-end">
+          <div className="text-center">
             <button className="btn btn-outline-danger" type="button" onClick={(e)=>delAllCart(e)}>清空購物車</button>
           </div>
           <table className="table align-middle">
@@ -242,9 +277,9 @@ function App() {
               <tr >
                 <td  style={{ width: '150px' }}><img src={item.product.imageUrl} alt="" /></td>
                 <td>{item.product.title}</td>
-                <td style={{ width: '150px' }}>{item.qty}</td>
+                <td style={{ width: '150px' }}><button type="button" className="btn  btn-outline-primary btn-sm" onClick={()=>addProudctNum(item)}>+</button><p style={{display:'inline',fontSize: '24px', margin:'2px'}}>{item.qty}</p><button className="btn btn-outline-primary btn-sm" data-num={item.qtt} onClick={()=>cutProductNum(item)}> - </button></td>
                 <td>{item.product.price}</td>
-                <td><button className="btn btn-outline-danger btn-sm" data-id={item.id}  onClick={(e)=>delSignleCart(e)}>x</button></td>
+                <td><button type="button" className="btn btn-outline-danger btn-sm" data-id={item.id}  onClick={(e)=>delSignleCart(e)}>x</button></td>
               </tr>
             </tbody>
             )}
