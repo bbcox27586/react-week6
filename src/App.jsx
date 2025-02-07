@@ -32,20 +32,25 @@ function App() {
   const [getProduct , setGetProduct] = useState([]);
   const [getCardList , setGetCardList] = useState([]);
   const [getModalNum , setGetModalNum] = useState(0);
-
+  const [showImage , setShowImage] = useState([]);
+  const [showMainImage , setShowMainImage] = useState('');
+  const [addCardList , setaddCardList] = useState({
+    "data": {
+      "product_id": "",
+      "qty": 0
+    }
+  });
+  const [delCardList , setDelCardList] = useState("");
+  
   const modalRef = useRef(null)
   const myModal = useRef(null)
-
+  //資料初始化
   useEffect(()=>{
     getProductList()
-    getCartList()
-  },[])
-
-  useEffect(()=>{
+    getCartListFn()
     myModal.current = new bootstrap.Modal(modalRef.current);
-  })
-
-
+  },[])
+  //取得產品列表
   const getProductList = async() => {
     try{
       const response = await axios.get(`${API_BASE}/api/${API_PATH}/products`)
@@ -55,19 +60,28 @@ function App() {
       
     }
   }
-
-  const getCartList = async() => {
+   //取得購物車列表
+  const getCartListFn = async() => {
     try{
       const response = await axios.get(`${API_BASE}/api/${API_PATH}/cart`)
-      setGetCardList(response.data.carts)
+      setGetCardList(response.data.data)
     }catch(errors){
       console.log(errors);
       
     }
-  }
-  
-  console.log(getCardList);
-  
+  }  
+  //產品詳細  副圖(問chatGpt)
+  useEffect(() => {
+    if (getProduct.length > 0) {
+      const selectedItem = getProduct.find((_, i) => i === Number(getModalNum));
+      if (selectedItem) {
+        setShowImage([selectedItem.imageUrl, ...selectedItem.imagesUrl]);
+      }
+    }
+    console.log(3);
+    
+  }, [getModalNum, getProduct]);
+  //react-hook-form
   const {
     register,
     watch,
@@ -83,33 +97,95 @@ function App() {
     },
     mode : "onTouched"
   })
-
-  console.log(watch());
-  console.log(errors.email);
-
+  //查看更多
   const moreDetail = (e) => {
     setGetModalNum(e.target.value)
+    setShowMainImage("")
     console.log(getProduct);
     myModal.current.show()
     
   }
-  
-  console.log(typeof getModalNum);
-  
-
+  //提交表單
   const onSubmit = (data) => {
     console.log(data);
-    
   }
   
+  //加入購物車
+  const addProductCart = (e) => {
+    const productId = e.target.dataset.id;
+    setaddCardList({
+      "data": {
+        "product_id":productId,
+        "qty": 1
+      }
+    })
+  }
+  
+  useEffect(()=>{
+    if( addCardList.data["product_id"] ===  "" ) return;
+    (async()=>{
+      try{
+        const response = await axios.post(`${API_BASE}/api/${API_PATH}/cart`,addCardList)
+        console.log(response.data);
+        setaddCardList({
+          "data": {
+            "product_id":"",
+            "qty": 0
+          }
+        })
+        getCartListFn()
+      }catch(errors){
+        console.log(errors);
+        
+      }
+    })()
+  },[addCardList])
+
+  //切換主圖
+  const changeMainImage = (e) => {
+    setShowMainImage(e.target.src)
+  }
+  //關閉Modal
+  const closeModal = () => {
+    myModal.current.hide()
+  }
+  //刪除全部購物車
+  const delAllCart = async() => {
+    try{
+      const response = await axios.delete(`${API_BASE}/api/${API_PATH}/carts`)
+      getCartListFn()
+    }catch(errors){
+      console.log(errors);
+      
+    }
+  }
+  //刪除單筆購物車
+  const delSignleCart = (e) => {
+    const cartId = e.target.dataset.id;
+    setDelCardList(cartId)
+  }
+  useEffect(()=>{
+    if(delCardList==="") return;
+    (async() => {
+      try{
+        const response = await axios.delete(`${API_BASE}/api/${API_PATH}/cart/${delCardList}`)
+        console.log(response.data);
+        
+        getCartListFn()
+        setDelCardList("")
+      }catch(errors){
+        console.log(errors);
+        
+      }
+    })()
+  },[delCardList])
 
   return (
     <div id="app">
       <div className="container">
         <div className="mt-4">
-          {/* 產品Modal */}
           
-          {/* 產品Modal */}
+          {/* 產品列表 */}
           <table className="table align-middle">
             <thead>
               <tr>
@@ -137,7 +213,7 @@ function App() {
                       <i className="fas fa-spinner fa-pulse"></i>
                       查看更多
                     </button>
-                    <button type="button" className="btn btn-outline-danger">
+                    <button type="button" className="btn btn-outline-danger" data-id={item.id} num={item.num} onClick={(e)=>{addProductCart(e)}}>
                       <i className="fas fa-spinner fa-pulse"></i>
                       加到購物車
                     </button>
@@ -148,88 +224,107 @@ function App() {
             </tbody>
           </table>
           <div className="text-end">
-            <button className="btn btn-outline-danger" type="button">清空購物車</button>
+            <button className="btn btn-outline-danger" type="button" onClick={(e)=>delAllCart(e)}>清空購物車</button>
           </div>
           <table className="table align-middle">
             <thead>
               <tr>
-                <th></th>
+                <th>行程圖</th>
                 <th>品名</th>
                 <th style={{ width: '150px' }}>數量/單位</th>
                 <th>單價</th>
+                <th>刪除購物車</th>
               </tr>
             </thead>
-            <tbody>
-              {/* Cart rows here */}
+            
+            {getCardList.carts?.map((item , index)=>
+              <tbody key={index}>
+              <tr >
+                <td  style={{ width: '150px' }}><img src={item.product.imageUrl} alt="" /></td>
+                <td>{item.product.title}</td>
+                <td style={{ width: '150px' }}>{item.qty}</td>
+                <td>{item.product.price}</td>
+                <td><button className="btn btn-outline-danger btn-sm" data-id={item.id}  onClick={(e)=>delSignleCart(e)}>x</button></td>
+              </tr>
             </tbody>
+            )}
             <tfoot>
-              <tr>
-                <td colSpan="3" className="text-end">總計</td>
-                <td className="text-end"></td>
+            <tr>
+                <td colSpan="4" className="text-end">總計</td>
+                <td className="text-center">{getCardList["final_total"]}</td>
               </tr>
               <tr>
-                <td colSpan="3" className="text-end text-success">折扣價</td>
-                <td className="text-end text-success"></td>
+                <td colSpan="4" className="text-end text-success">折扣價</td>
+                <td className="text-center text-success"></td>
               </tr>
+
             </tfoot>
+
           </table>
         </div>
 
         {/* 產品詳細資訊*/ }
-        <div className="modal fade"  ref={modalRef} tabindex="-1" >
-          <div className="modal-dialog modal-lg">
-            {getProduct.map((item, index)=>
-            index===Number(getModalNum) ? <div className="modal-content">
-            <div className="modal-header">
-              <h1 className="modal-title fs-5" id="exampleModalLabel" style={{ fontWeight: "900" }}>行程:{item.title}</h1>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <div className="modal-body text-start">
-              <div className="card mb-3" style={{maxWidth:"1000px" }}>
-                <div className="row g-0">
-                  <div className="col-md-5">
-                    <img src={item.imageUrl}  style={{ height: "300px", objectFit: "cover" }} alt="..." />
+        <div className="modal fade"  ref={modalRef} tabIndex="-1" >
+        <div className="modal-dialog modal-xl">
+            {getProduct.map((item, index) =>
+              index === Number(getModalNum) ? (
+                <div className="modal-content" key={index}>
+                  <div className="modal-header">
+                    <h1 className="modal-title fs-5" id="exampleModalLabel" style={{ fontWeight: "900" }}>
+                      行程:{item.title}
+                    </h1>
+                    <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" onClick={closeModal}></button>
                   </div>
-                  <div className="col-md-7">
-                    <div className="card-body">
-                      <h3 className="card-text">行程介紹:</h3>
-                      {item.content}
-                    </div>
-                    <div style={{ marginTop: "50px" }}>
-                    <p className="card-text text-center">原價{item.origin_price}</p>
-                    <p className="card-text text-center" style={{ color : 'red'}}>特價{item.price}</p>
+
+                  <div className="modal-body text-start">
+                    <div className="card mb-3" style={{ maxWidth: "1000px" }}>
+                      <div className="row g-0 ">
+                        {/* 這裡是左側的圖片區域 */}
+                        <div className="col-md-5" style={{ flex: "none"}}>
+                          <img
+                            src={showMainImage === "" ? item.imageUrl : showMainImage}
+                            style={{ width: "500px", maxWidth: "100%", height: "300px", objectFit: "cover" }}
+                            alt="..."
+                          />
+                          <div style={{ display: "flex" }}>
+                            {showImage.map((picture, index) =>
+                              picture !== "" ? (
+                                <div key={index} id={index} style={{ margin: "5px" }}>
+                                  <button style={{ border: "none", padding: "0px" }} onClick={(e) => { changeMainImage(e); }}>
+                                    <img src={picture} style={{ height: "75px", width: "100px", objectFit: "cover" }} alt="..." />
+                                  </button>
+                                </div>
+                              ) : ""
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 這裡是右側的文字區域，讓它水平方向排列 */}
+                        <div className="col-md-7" style={{ display: "flex", flexDirection: "column", backgroundColor : "#eee"}}>
+                          <div className="text-area" style={{ margin: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", borderRadius: "8px", flex: "1", backgroundColor : "#fff" }}>
+                            <div className="card-body">
+                              <h3 className="card-text">行程介紹:</h3>
+                              {item.content}
+                            </div>
+                            <div className="card-body" style={{display: "flex"}}>
+                              <p className="card-text text-center" style={{marginRight: "10px"}}><small>原價{item.origin_price}</small></p>
+                              <h3 className="card-text text-center" style={{ color: "red" }}>
+                                特價{item.price}
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            
-
-            <div className="modal-footer">
-              <div className="input-group align-items-center">
-                <label for="qtySelect">數量：</label>
-                <select id="qtySelect" class="form-select">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
-                  <option value="6">6</option>
-                  <option value="7">7</option>
-                  <option value="8">8</option>
-                  <option value="9">9</option>
-                  <option value="10">10</option>
-                </select>
-              </div>
-              <button type="button" className="btn btn-primary">加入購物車</button>
-            </div>
-          </div> : ""   
+              ) : ""
             )}
           </div>
+
         </div>
 
-
+        {/*驗證表單*/ }
         <div className="my-5 row justify-content-center">
           <form className="col-md-6" id="form" onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-3">
